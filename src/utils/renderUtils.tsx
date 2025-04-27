@@ -1,3 +1,4 @@
+import DOMPurify from 'dompurify';
 import { ReactElement } from 'react';
 
 /**
@@ -10,9 +11,13 @@ export const safeRenderContent = (content: unknown): ReactElement => {
     return <></>;
   }
 
-  // Handle string content directly
+  // Handle string content - Assume it might be HTML, sanitize and render
   if (typeof content === 'string') {
-    return <>{content}</>;
+    // Sanitize the HTML content
+    const cleanHtml = DOMPurify.sanitize(content);
+    // Render the sanitized HTML using a span for inline rendering
+    // Added 'prose dark:prose-invert max-w-none break-words' from the other case for consistency
+    return <span className="prose dark:prose-invert max-w-none break-words" dangerouslySetInnerHTML={{ __html: cleanHtml }} />;
   }
 
   // Handle objects - deep parsing for nested content objects
@@ -31,9 +36,13 @@ export const safeRenderContent = (content: unknown): ReactElement => {
       return safeRenderContent(obj.message);
     }
 
-    // Case 3: HTML content (needs special handling)
-    if ('contentType' in obj && obj.contentType === 'html') {
-      return <>[HTML Content]</>;
+    // Case 3: HTML content (explicitly marked)
+    if ('contentType' in obj && obj.contentType === 'html' && typeof obj.content === 'string') {
+      // Sanitize the HTML content
+      const cleanHtml = DOMPurify.sanitize(obj.content);
+      // Render the sanitized HTML using a div as it's likely block content
+      // Added 'prose dark:prose-invert max-w-none break-words' for basic typography styling and word wrap
+      return <div className="prose dark:prose-invert max-w-none break-words" dangerouslySetInnerHTML={{ __html: cleanHtml }} />;
     }
 
     // Fallback - show placeholder for complex objects
