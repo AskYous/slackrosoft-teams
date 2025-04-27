@@ -1,6 +1,10 @@
 import { Chat } from "@microsoft/microsoft-graph-types";
 import { useCallback, useEffect, useState } from "react";
 import { useGraph } from "../hooks/useGraph";
+import { cn } from "../lib/utils";
+import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
+import { Button } from "./ui/button";
+import { Skeleton } from "./ui/skeleton";
 
 interface ChatListProps {
   onSelectChat: (chatId: string) => void;
@@ -15,11 +19,21 @@ const ChatList = ({ onSelectChat, selectedChatId }: ChatListProps) => {
     try {
       const graphClient = await getGraphClient();
       const chatList = await graphClient.getChats();
-      setChats(chatList);
+      setChats(chatList || []);
     } catch (err) {
       console.error("Error fetching chats:", err);
     }
   }, [getGraphClient]);
+
+  // Type guard to check for error with message property
+  const isErrorWithMessage = (error: unknown): error is { message: string } => {
+    return (
+      typeof error === 'object' &&
+      error !== null &&
+      'message' in error &&
+      typeof error.message === 'string'
+    );
+  };
 
   useEffect(() => {
     fetchChats();
@@ -52,18 +66,35 @@ const ChatList = ({ onSelectChat, selectedChatId }: ChatListProps) => {
   };
 
   if (isLoading) {
-    // Match sidebar text color
-    return <div className="p-4 text-gray-400">Loading chats...</div>;
+    return (
+      <div className="p-2 space-y-1">
+        {[...Array(10)].map((_, i) => (
+          <div key={i} className="flex items-center justify-between p-2 rounded-md">
+            <Skeleton className="h-4 w-3/4" />
+            <Skeleton className="h-3 w-1/6" />
+          </div>
+        ))}
+      </div>
+    );
   }
 
   if (error) {
-    return <div className="p-4 text-red-400">Error: {error}</div>;
+    return (
+      <div className="p-4">
+        <Alert variant="destructive">
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>
+            {isErrorWithMessage(error) ? error.message : String(error ?? 'Unknown error')}
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
   }
 
   return (
-    <>
+    <div className="flex flex-col space-y-1">
       {chats.length === 0 ? (
-        <p className="px-3 py-2 text-sm text-gray-400">No chats found</p>
+        <p className="px-2 py-2 text-sm text-muted-foreground">No chats found</p>
       ) : (
         chats.map((chat) => {
           const isSelected = selectedChatId === chat.id;
@@ -71,32 +102,35 @@ const ChatList = ({ onSelectChat, selectedChatId }: ChatListProps) => {
           const lastUpdated = formatLastUpdated(chat.lastUpdatedDateTime);
 
           return (
-            <div
+            <Button
               key={chat.id}
+              variant="ghost"
               onClick={() => onSelectChat(chat.id!)}
-              className={`
-                px-3 py-1.5 rounded-md cursor-pointer transition-colors duration-100 ease-in-out 
-                group flex justify-between items-center 
-                ${isSelected
-                  ? 'bg-blue-600 text-white' // Selected state: Slack-like blue background, white text
-                  : 'text-gray-300 hover:bg-gray-700 hover:text-gray-100' // Default state: gray text, darker bg on hover
-                }
-              `}
-              title={`${displayName}\nLast updated: ${lastUpdated}`} // Tooltip for full info
+              className={cn(
+                "h-auto py-1.5 px-2 text-left",
+                isSelected
+                  ? "bg-accent text-accent-foreground"
+                  : "hover:bg-muted"
+              )}
+              title={`${displayName}
+Last updated: ${lastUpdated}`}
             >
               {/* Chat Title / Name */}
-              <span className="text-sm font-medium truncate flex-1 mr-2">
+              <span className="text-sm font-medium truncate mr-2">
                 {displayName}
               </span>
-              {/* Last Updated Time (optional, shown on hover/selected?) - Kept subtle for now */}
-              <span className={`text-xs flex-shrink-0 ${isSelected ? 'text-blue-100' : 'text-gray-400 group-hover:text-gray-300'}`}>
+              {/* Last Updated Time */}
+              <span className={cn(
+                "text-xs flex-shrink-0",
+                isSelected ? "text-accent-foreground/80" : "text-muted-foreground"
+              )}>
                 {lastUpdated}
               </span>
-            </div>
+            </Button>
           );
         })
       )}
-    </>
+    </div>
   );
 };
 

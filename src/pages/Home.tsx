@@ -33,7 +33,7 @@ const Home = () => {
     // Main container - Use flex row for sidebar + main content
     <div className="flex h-screen bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100">
       {/* Sidebar Section - Darker background, fixed width */}
-      <aside className="w-72 flex flex-col bg-gray-800 dark:bg-gray-900 text-gray-300 border-r border-gray-700 dark:border-gray-800">
+      <aside className="w-72 flex-shrink-0 flex flex-col bg-gray-800 dark:bg-gray-900 text-gray-300 border-r border-gray-700 dark:border-gray-800">
         {/* Sidebar Header (Optional, can add workspace switcher later) */}
         <div className="h-12 flex items-center justify-between px-4 border-b border-gray-700 dark:border-gray-800 shadow-sm">
           <h2 className="font-semibold text-white">Workspace</h2> {/* Placeholder */}
@@ -41,7 +41,7 @@ const Home = () => {
         </div>
 
         {/* Tabs for Chats/People */}
-        <Tabs defaultValue="chats" className="flex-1 flex flex-col overflow-hidden">
+        <Tabs defaultValue="chats" className="flex-1 flex flex-col overflow-hidden min-h-0 overflow-x-hidden">
           <TabsList className="grid w-full grid-cols-2 rounded-none bg-gray-800 dark:bg-gray-900 border-b border-gray-700 dark:border-gray-800 h-10 px-1 pt-1">
             {/* Updated Trigger styling */}
             <TabsTrigger
@@ -58,9 +58,9 @@ const Home = () => {
             </TabsTrigger>
           </TabsList>
 
-          {/* Scrollable Content Area */}
-          <ScrollArea className="flex-1 overflow-y-auto">
-            <TabsContent value="chats" className="mt-0 p-2 space-y-1">
+          {/* Scrollable Content Area - Reverted h-full removal from TabsContent */}
+          <ScrollArea className="flex-1 overflow-y-auto overflow-x-hidden">
+            <TabsContent value="chats" className="mt-0 p-2 space-y-1 w-full overflow-x-hidden">
               <ChatList onSelectChat={handleSelectChat} selectedChatId={selectedChatId} />
             </TabsContent>
             <TabsContent value="people" className="mt-0 p-2 space-y-1">
