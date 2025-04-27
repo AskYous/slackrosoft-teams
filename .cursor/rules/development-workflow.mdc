@@ -1,0 +1,22 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Development Workflow
+
+## Scripts
+
+The following npm scripts are available in [ms-teams-app/package.json](mdc:ms-teams-app/package.json):
+
+- **dev**: `vite` - Run the development server
+- **build**: `tsc -b && vite build` - Type check and build the application
+- **lint**: `eslint .` - Run the linter
+- **preview**: `vite preview` - Preview the built application
+
+## Development Environment
+
+- Node.js and npm are required
+- After cloning, run `npm install` to install dependencies
+- Run `npm run dev` to start the development server
+- The application uses Vite HMR (Hot Module Replacement) for fast development

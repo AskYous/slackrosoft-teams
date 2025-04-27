@@ -1,0 +1,17 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Authentication Flow
+
+This application uses Microsoft Authentication Library (MSAL) for authentication with Microsoft services.
+
+## Key Files
+
+- **Auth Configuration**: [ms-teams-app/src/config/authConfig.ts](mdc:ms-teams-app/src/config/authConfig.ts) - MSAL configuration
+- **Login Page**: [ms-teams-app/src/pages/Login.tsx](mdc:ms-teams-app/src/pages/Login.tsx) - Login page component
+- **Login Button**: [ms-teams-app/src/components/LoginButton.tsx](mdc:ms-teams-app/src/components/LoginButton.tsx) - Login button component
+- **Logout Button**: [ms-teams-app/src/components/LogoutButton.tsx](mdc:ms-teams-app/src/components/LogoutButton.tsx) - Logout button component
+
+Authentication is handled through the MsalProvider in the App component with protected routes using AuthenticatedTemplate and UnauthenticatedTemplate components.

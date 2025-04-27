@@ -1,0 +1,31 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Coding Conventions
+
+## TypeScript/React Conventions
+
+- **Function Declarations**: Always declare JS/TS functions using `const` with arrow functions:
+  ```typescript
+  // Correct
+  const myFunction = () => {
+    // Implementation
+  };
+
+  // Avoid
+  function myFunction() {
+    // Implementation
+  }
+  ```
+
+- **Component Structure**: React components are functional components using the arrow function syntax
+- **Routing**: React Router v7 is used for navigation
+- **Styling**: Tailwind CSS is used for styling components
+
+## Project Configuration
+
+- **Build Tool**: Vite is used as the build tool 
+- **TypeScript**: Strict mode TypeScript is used throughout the project
+- **Linting**: ESLint is configured for code quality
