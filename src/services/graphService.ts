@@ -1,6 +1,6 @@
 import { AuthenticationResult } from "@azure/msal-browser";
 import { Client } from "@microsoft/microsoft-graph-client";
-import { Chat, Presence, User } from "@microsoft/microsoft-graph-types";
+import { Chat, ChatMessage, Presence, User } from "@microsoft/microsoft-graph-types";
 
 /**
  * Graph API Service for user profile and basic chat information
@@ -32,16 +32,20 @@ export class GraphService {
 
   /**
    * Get list of chats (read-only with Chat.Read permission)
+   * Expands members to get participant display names.
    */
   public getChats = async (): Promise<Chat[]> => {
     try {
       const response = await this.client
         .api("/me/chats")
-        .select("id,topic,lastUpdatedDateTime")
+        .expand("members")
+        .select("id,topic,lastUpdatedDateTime,chatType,members")
         .top(50)
         .get();
 
-      return response.value;
+      console.log("Fetched chats with expanded members:", JSON.stringify(response.value, null, 2));
+
+      return response.value || [];
     } catch (error) {
       console.error("Error getting chats:", error);
       throw error;
@@ -51,14 +55,16 @@ export class GraphService {
   /**
    * Get messages from a specific chat (read-only with Chat.Read permission)
    */
-  public getChatMessages = async (chatId: string) => {
+  public getChatMessages = async (chatId: string): Promise<ChatMessage[]> => {
     try {
       const response = await this.client
         .api(`/me/chats/${chatId}/messages`)
         .top(50)
         .get();
 
-      return response.value;
+      console.log(`Fetched messages for chat ${chatId}:`, JSON.stringify(response.value, null, 2));
+
+      return response.value || [];
     } catch (error) {
       console.error(`Error getting messages for chat ${chatId}:`, error);
       throw error;
