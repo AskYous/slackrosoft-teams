@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
 import { useGraph } from "../hooks/useGraph";
 import { safeStringContent } from "../utils/renderUtils";
-// Import Shadcn components
+// Import only necessary Shadcn components
 import { Avatar, AvatarFallback } from "./ui/avatar";
-import { Card, CardDescription, CardHeader, CardTitle } from "./ui/card";
+// Removed Card imports
+// import { Card, CardDescription, CardHeader, CardTitle } from "./ui/card";
 
 interface Person {
   id?: string;
@@ -47,45 +48,56 @@ const PeopleList = () => {
   }, [fetchPeople]);
 
   if (isLoading) {
-    return <div className="p-4">Loading people...</div>;
+    // Match sidebar text color
+    return <div className="p-4 text-gray-400">Loading people...</div>;
   }
 
   if (error) {
-    return <div className="p-4 text-red-500">Error: {error}</div>;
+    return <div className="p-4 text-red-400">Error: {error}</div>;
   }
 
   return (
-    // Remove border-r, handled by Tabs container
-    <div className="h-full">
+    // Remove outer div, padding handled in Home.tsx TabContent
+    // Use space-y-1 on parent in Home.tsx if needed
+    <>
       {people.length === 0 ? (
-        <p className="p-4 text-gray-500">No people found</p>
+        <p className="px-3 py-2 text-sm text-gray-400">No people found</p>
       ) : (
-        // Add padding and spacing for cards
-        <div className="p-2 space-y-2">
-          {people.map((person) => {
-            const displayName = safeStringContent(person.displayName);
-            const email = person.scoredEmailAddresses?.[0]?.address
-              ? safeStringContent(person.scoredEmailAddresses[0].address)
-              : "No email available";
+        // Removed wrapper div, map directly
+        people.map((person) => {
+          const displayName = safeStringContent(person.displayName);
+          const email = person.scoredEmailAddresses?.[0]?.address
+            ? safeStringContent(person.scoredEmailAddresses[0].address)
+            : "No email available";
+          const initials = getInitials(displayName);
 
-            return (
-              <Card key={person.id} className="transition-colors">
-                <CardHeader className="flex flex-row items-center space-x-3 p-3">
-                  <Avatar>
-                    {/* Add AvatarFallback with initials */}
-                    <AvatarFallback>{getInitials(displayName)}</AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1">
-                    <CardTitle className="text-sm font-medium">{displayName}</CardTitle>
-                    <CardDescription className="text-xs">{email}</CardDescription>
-                  </div>
-                </CardHeader>
-              </Card>
-            );
-          })}
-        </div>
+          return (
+            // Replace Card with styled div, add hover effect
+            <div
+              key={person.id}
+              className="flex items-center space-x-3 px-3 py-2 rounded-md cursor-default transition-colors duration-100 ease-in-out hover:bg-gray-700 group"
+              title={`${displayName}\n${email}`} // Tooltip for full info
+            >
+              {/* Avatar styling might need slight adjustment if needed */}
+              <Avatar className="h-8 w-8">
+                <AvatarFallback className="text-xs bg-gray-600 text-gray-200 group-hover:bg-gray-500">
+                  {initials}
+                </AvatarFallback>
+              </Avatar>
+              {/* Text styling for dark sidebar */}
+              <div className="flex-1 overflow-hidden">
+                <p className="text-sm font-medium text-gray-200 group-hover:text-white truncate">
+                  {displayName}
+                </p>
+                <p className="text-xs text-gray-400 group-hover:text-gray-300 truncate">
+                  {email}
+                </p>
+              </div>
+            </div>
+          );
+        })
       )}
-    </div>
+    </>
   );
 };
 

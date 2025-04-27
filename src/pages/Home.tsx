@@ -7,6 +7,7 @@ import PeopleList from "../components/PeopleList";
 import PresenceStatus from "../components/PresenceStatus";
 import Profile from "../components/Profile";
 // Import Shadcn components using relative paths
+import { MessageSquareText } from "lucide-react"; // Import an icon
 import { ScrollArea } from "../components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
 
@@ -29,57 +30,79 @@ const Home = () => {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-gray-100 dark:bg-gray-900">
-      {/* Header Section */}
-      <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
-        <div className="max-w-full mx-auto px-6 py-3 flex justify-between items-center">
-          <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100">MS Teams Viewer</h1>
-          <div className="flex items-center space-x-4">
-            <PresenceStatus />
-            <Profile />
-          </div>
+    // Main container - Use flex row for sidebar + main content
+    <div className="flex h-screen bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100">
+      {/* Sidebar Section - Darker background, fixed width */}
+      <aside className="w-72 flex flex-col bg-gray-800 dark:bg-gray-900 text-gray-300 border-r border-gray-700 dark:border-gray-800">
+        {/* Sidebar Header (Optional, can add workspace switcher later) */}
+        <div className="h-12 flex items-center justify-between px-4 border-b border-gray-700 dark:border-gray-800 shadow-sm">
+          <h2 className="font-semibold text-white">Workspace</h2> {/* Placeholder */}
+          {/* Add dropdown/profile icon here if needed */}
         </div>
-      </header>
 
-      <div className="flex-1 flex overflow-hidden">
-        {/* Sidebar Section - Adjusted width and background */}
-        <Tabs defaultValue="chats" className="w-[320px] flex flex-col border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-          <TabsList className="grid w-full grid-cols-2 rounded-none border-b border-gray-200 dark:border-gray-700 h-12">
-            <TabsTrigger value="chats" className="data-[state=active]:bg-gray-100 dark:data-[state=active]:bg-gray-700 data-[state=active]:shadow-none rounded-none">Chats</TabsTrigger>
-            <TabsTrigger value="people" className="data-[state=active]:bg-gray-100 dark:data-[state=active]:bg-gray-700 data-[state=active]:shadow-none rounded-none">People</TabsTrigger>
+        {/* Tabs for Chats/People */}
+        <Tabs defaultValue="chats" className="flex-1 flex flex-col overflow-hidden">
+          <TabsList className="grid w-full grid-cols-2 rounded-none bg-gray-800 dark:bg-gray-900 border-b border-gray-700 dark:border-gray-800 h-10 px-1 pt-1">
+            {/* Updated Trigger styling */}
+            <TabsTrigger
+              value="chats"
+              className="text-sm font-medium rounded-t-md px-3 py-1.5 data-[state=active]:bg-gray-700 dark:data-[state=active]:bg-gray-850 data-[state=active]:text-white dark:data-[state=active]:text-white text-gray-400 hover:text-gray-200 focus-visible:ring-offset-0 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none"
+            >
+              Chats
+            </TabsTrigger>
+            <TabsTrigger
+              value="people"
+              className="text-sm font-medium rounded-t-md px-3 py-1.5 data-[state=active]:bg-gray-700 dark:data-[state=active]:bg-gray-850 data-[state=active]:text-white dark:data-[state=active]:text-white text-gray-400 hover:text-gray-200 focus-visible:ring-offset-0 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none"
+            >
+              People
+            </TabsTrigger>
           </TabsList>
 
           {/* Scrollable Content Area */}
           <ScrollArea className="flex-1 overflow-y-auto">
-            <TabsContent value="chats" className="mt-0 p-2">
+            <TabsContent value="chats" className="mt-0 p-2 space-y-1">
               <ChatList onSelectChat={handleSelectChat} selectedChatId={selectedChatId} />
             </TabsContent>
-            <TabsContent value="people" className="mt-0 p-2">
+            <TabsContent value="people" className="mt-0 p-2 space-y-1">
               <PeopleList />
             </TabsContent>
           </ScrollArea>
         </Tabs>
+        {/* Sidebar Footer (Profile/Settings) */}
+        <div className="p-3 border-t border-gray-700 dark:border-gray-800 bg-gray-800 dark:bg-gray-900 flex items-center space-x-3">
+          <Profile /> {/* Moved Profile here */}
+          <PresenceStatus /> {/* Moved Presence here */}
+        </div>
+      </aside>
 
-        {/* Main Content Area - Adjusted background */}
-        <main className="flex-1 h-full flex items-center justify-center bg-gray-50 dark:bg-gray-850">
+      {/* Main Content Area - Lighter background */}
+      <main className="flex-1 flex flex-col overflow-hidden">
+        {/* Main Header (Optional - Could show channel/chat name) */}
+        <header className="h-12 flex items-center px-6 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-850 shadow-sm">
+          {/* Content depends on selected chat/view */}
+          <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+            {selectedChatId ? 'Chat Details' : 'Select a Chat'} {/* Placeholder */}
+          </h1>
+        </header>
+
+        {/* Chat Window or Placeholder */}
+        <div className="flex-1 flex items-center justify-center bg-gray-50 dark:bg-gray-900 overflow-y-auto">
           {selectedChatId !== null ? (
             <ChatWindow chatId={selectedChatId} />
           ) : (
-            <div className="text-center">
-              <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                <path vectorEffect="non-scaling-stroke" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-              </svg>
-              <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-gray-100">Select a chat</h3>
-              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Get started by selecting a chat from the list.</p>
+            // Updated Placeholder Styling
+            <div className="text-center text-gray-500 dark:text-gray-400">
+              <MessageSquareText className="mx-auto h-16 w-16 text-gray-400 dark:text-gray-500 mb-4" strokeWidth={1.5} />
+              <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300">Select a chat</h3>
+              <p className="mt-1 text-sm">Get started by selecting a chat from the list.</p>
             </div>
           )}
-        </main>
-      </div>
-
-      {/* Footer Section - Adjusted background and padding */}
-      <footer className="bg-gray-100 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 py-2 px-6 text-center text-xs text-gray-500 dark:text-gray-400">
-        <p>This app only uses permissions that don't require admin consent. Some features are limited.</p>
-      </footer>
+        </div>
+        {/* Footer (Optional - Could remove or integrate differently) */}
+        <footer className="bg-gray-100 dark:bg-gray-850 border-t border-gray-200 dark:border-gray-700 py-2 px-6 text-center text-xs text-gray-500 dark:text-gray-400">
+          <p>This app only uses permissions that don't require admin consent. Some features are limited.</p>
+        </footer>
+      </main>
     </div>
   );
 };

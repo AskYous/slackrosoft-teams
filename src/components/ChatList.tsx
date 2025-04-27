@@ -1,7 +1,6 @@
 import { Chat } from "@microsoft/microsoft-graph-types";
 import { useCallback, useEffect, useState } from "react";
 import { useGraph } from "../hooks/useGraph";
-import { Card, CardDescription, CardHeader, CardTitle } from "./ui/card";
 
 interface ChatListProps {
   onSelectChat: (chatId: string) => void;
@@ -26,57 +25,78 @@ const ChatList = ({ onSelectChat, selectedChatId }: ChatListProps) => {
     fetchChats();
   }, [fetchChats]);
 
-  // Helper function to get chat display name
   const getChatDisplayName = (chat: Chat): string => {
     if (chat.topic) {
       return chat.topic;
     }
-
-    // For direct chats without a topic, try to get the other person's name
     if (chat.members && chat.members.length > 0) {
       const members = chat.members.filter(m => m.displayName);
       if (members.length > 0) {
         return members.map(m => m.displayName).join(", ");
       }
     }
-
     return "Unnamed chat";
   };
 
+  // Helper function to format date/time or return placeholder
+  const formatLastUpdated = (dateTime: string | undefined | null): string => {
+    if (!dateTime) return "";
+    try {
+      return new Date(dateTime).toLocaleString([], {
+        dateStyle: 'short',
+        timeStyle: 'short'
+      });
+    } catch {
+      return "Invalid Date";
+    }
+  };
+
   if (isLoading) {
-    return <div className="p-4">Loading chats...</div>;
+    // Match sidebar text color
+    return <div className="p-4 text-gray-400">Loading chats...</div>;
   }
 
   if (error) {
-    return <div className="p-4 text-red-500">Error: {error}</div>;
+    return <div className="p-4 text-red-400">Error: {error}</div>;
   }
 
   return (
-    <div className="h-full">
+    <>
       {chats.length === 0 ? (
-        <p className="p-4 text-gray-500">No chats found</p>
+        <p className="px-3 py-2 text-sm text-gray-400">No chats found</p>
       ) : (
-        <div className="p-2 space-y-2">
-          {chats.map((chat) => (
-            <Card
+        chats.map((chat) => {
+          const isSelected = selectedChatId === chat.id;
+          const displayName = getChatDisplayName(chat);
+          const lastUpdated = formatLastUpdated(chat.lastUpdatedDateTime);
+
+          return (
+            <div
               key={chat.id}
               onClick={() => onSelectChat(chat.id!)}
-              className={`cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${selectedChatId === chat.id ? 'bg-blue-50 dark:bg-blue-900 border-blue-300 dark:border-blue-700' : 'bg-white dark:bg-gray-800'
-                }`}
+              className={`
+                px-3 py-1.5 rounded-md cursor-pointer transition-colors duration-100 ease-in-out 
+                group flex justify-between items-center 
+                ${isSelected
+                  ? 'bg-blue-600 text-white' // Selected state: Slack-like blue background, white text
+                  : 'text-gray-300 hover:bg-gray-700 hover:text-gray-100' // Default state: gray text, darker bg on hover
+                }
+              `}
+              title={`${displayName}\nLast updated: ${lastUpdated}`} // Tooltip for full info
             >
-              <CardHeader className="p-3">
-                <CardTitle className={`text-sm font-medium ${selectedChatId === chat.id ? 'text-blue-800 dark:text-blue-200' : 'text-gray-900 dark:text-gray-100'}`}>
-                  {getChatDisplayName(chat)}
-                </CardTitle>
-                <CardDescription className={`text-xs ${selectedChatId === chat.id ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'}`}>
-                  {new Date(chat.lastUpdatedDateTime || "").toLocaleString()}
-                </CardDescription>
-              </CardHeader>
-            </Card>
-          ))}
-        </div>
+              {/* Chat Title / Name */}
+              <span className="text-sm font-medium truncate flex-1 mr-2">
+                {displayName}
+              </span>
+              {/* Last Updated Time (optional, shown on hover/selected?) - Kept subtle for now */}
+              <span className={`text-xs flex-shrink-0 ${isSelected ? 'text-blue-100' : 'text-gray-400 group-hover:text-gray-300'}`}>
+                {lastUpdated}
+              </span>
+            </div>
+          );
+        })
       )}
-    </div>
+    </>
   );
 };
 
