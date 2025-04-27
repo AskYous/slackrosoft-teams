@@ -1,9 +1,9 @@
 import { Chat } from "@microsoft/microsoft-graph-types";
+import { formatDistanceToNow } from 'date-fns';
 import { useCallback, useEffect, useState } from "react";
 import { useGraph } from "../hooks/useGraph";
 import { cn } from "../lib/utils";
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
-import { Button } from "./ui/button";
 import { Skeleton } from "./ui/skeleton";
 
 interface ChatListProps {
@@ -56,10 +56,15 @@ const ChatList = ({ onSelectChat, selectedChatId }: ChatListProps) => {
   const formatLastUpdated = (dateTime: string | undefined | null): string => {
     if (!dateTime) return "";
     try {
-      return new Date(dateTime).toLocaleString([], {
-        dateStyle: 'short',
-        timeStyle: 'short'
-      });
+      // Use formatDistanceToNow for relative time, add suffix
+      const date = new Date(dateTime);
+      return formatDistanceToNow(date, { addSuffix: true });
+      // Keep old formatting as a fallback or for older dates if needed?
+      // For now, just use relative time.
+      // return date.toLocaleString([], {
+      //   dateStyle: 'short',
+      //   timeStyle: 'short'
+      // });
     } catch {
       return "Invalid Date";
     }
@@ -92,7 +97,7 @@ const ChatList = ({ onSelectChat, selectedChatId }: ChatListProps) => {
   }
 
   return (
-    <div className="flex flex-col space-y-1">
+    <div className="flex flex-col p-2">
       {chats.length === 0 ? (
         <p className="px-2 py-2 text-sm text-muted-foreground">No chats found</p>
       ) : (
@@ -102,31 +107,32 @@ const ChatList = ({ onSelectChat, selectedChatId }: ChatListProps) => {
           const lastUpdated = formatLastUpdated(chat.lastUpdatedDateTime);
 
           return (
-            <Button
+            <div
               key={chat.id}
-              variant="ghost"
               onClick={() => onSelectChat(chat.id!)}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onSelectChat(chat.id!) }}
               className={cn(
-                "h-auto py-1.5 px-2 text-left",
-                isSelected
-                  ? "bg-accent text-accent-foreground"
-                  : "hover:bg-muted"
+                "py-2 px-2 flex justify-between items-center w-full cursor-pointer",
+                "focus:outline-none focus:ring-1 focus:ring-ring rounded-sm"
               )}
               title={`${displayName}
-Last updated: ${lastUpdated}`}
+Last updated: ${new Date(chat.lastUpdatedDateTime || '').toLocaleString()}`}
             >
-              {/* Chat Title / Name */}
-              <span className="text-sm font-medium truncate mr-2">
+              <span className={cn(
+                "text-sm truncate mr-4 flex-grow min-w-0",
+                isSelected ? "font-semibold text-foreground" : "font-medium text-foreground"
+              )}>
                 {displayName}
               </span>
-              {/* Last Updated Time */}
               <span className={cn(
-                "text-xs flex-shrink-0",
-                isSelected ? "text-accent-foreground/80" : "text-muted-foreground"
+                "text-xs flex-shrink-0 whitespace-nowrap",
+                isSelected ? "text-muted-foreground/90" : "text-muted-foreground"
               )}>
                 {lastUpdated}
               </span>
-            </Button>
+            </div>
           );
         })
       )}
