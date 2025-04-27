@@ -1,12 +1,14 @@
 import { Chat } from "@microsoft/microsoft-graph-types";
 import { useCallback, useEffect, useState } from "react";
 import { useGraph } from "../hooks/useGraph";
+import { Card, CardDescription, CardHeader, CardTitle } from "./ui/card";
 
 interface ChatListProps {
   onSelectChat: (chatId: string) => void;
+  selectedChatId: string | null;
 }
 
-const ChatList = ({ onSelectChat }: ChatListProps) => {
+const ChatList = ({ onSelectChat, selectedChatId }: ChatListProps) => {
   const [chats, setChats] = useState<Chat[]>([]);
   const { getGraphClient, isLoading, error } = useGraph();
 
@@ -50,27 +52,30 @@ const ChatList = ({ onSelectChat }: ChatListProps) => {
   }
 
   return (
-    <div className="border-r border-gray-200 h-full overflow-y-auto">
-      <h2 className="text-lg font-semibold p-4 border-b">Your Chats</h2>
-      <ul>
-        {chats.length === 0 ? (
-          <li className="p-4 text-gray-500">No chats found</li>
-        ) : (
-          chats.map((chat) => (
-            <li key={chat.id} className="border-b last:border-0">
-              <button
-                onClick={() => onSelectChat(chat.id!)}
-                className="w-full p-4 text-left hover:bg-gray-100 transition-colors"
-              >
-                <div className="font-medium">{getChatDisplayName(chat)}</div>
-                <div className="text-sm text-gray-500">
+    <div className="h-full">
+      {chats.length === 0 ? (
+        <p className="p-4 text-gray-500">No chats found</p>
+      ) : (
+        <div className="p-2 space-y-2">
+          {chats.map((chat) => (
+            <Card
+              key={chat.id}
+              onClick={() => onSelectChat(chat.id!)}
+              className={`cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${selectedChatId === chat.id ? 'bg-blue-50 dark:bg-blue-900 border-blue-300 dark:border-blue-700' : 'bg-white dark:bg-gray-800'
+                }`}
+            >
+              <CardHeader className="p-3">
+                <CardTitle className={`text-sm font-medium ${selectedChatId === chat.id ? 'text-blue-800 dark:text-blue-200' : 'text-gray-900 dark:text-gray-100'}`}>
+                  {getChatDisplayName(chat)}
+                </CardTitle>
+                <CardDescription className={`text-xs ${selectedChatId === chat.id ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'}`}>
                   {new Date(chat.lastUpdatedDateTime || "").toLocaleString()}
-                </div>
-              </button>
-            </li>
-          ))
-        )}
-      </ul>
+                </CardDescription>
+              </CardHeader>
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   );
 };

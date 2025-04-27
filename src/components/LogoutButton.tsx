@@ -1,4 +1,5 @@
 import { useMsal } from "@azure/msal-react";
+import { Button } from "./ui/button";
 
 const LogoutButton = () => {
   const { instance } = useMsal();
@@ -10,13 +11,13 @@ const LogoutButton = () => {
   };
 
   return (
-    <button
+    <Button
       onClick={handleLogout}
-      className="px-3 py-1 text-sm bg-gray-200 text-gray-800 rounded hover:bg-gray-300 transition-colors"
+      variant="outline"
       title="Sign out"
     >
       Sign Out
-    </button>
+    </Button>
   );
 };
 

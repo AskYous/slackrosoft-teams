@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
 import { useGraph } from "../hooks/useGraph";
 import { safeStringContent } from "../utils/renderUtils";
+// Import Shadcn components
+import { Avatar, AvatarFallback } from "./ui/avatar";
+import { Card, CardDescription, CardHeader, CardTitle } from "./ui/card";
 
 interface Person {
   id?: string;
@@ -14,6 +17,16 @@ interface Person {
     subclass?: string | unknown;
   };
 }
+
+// Helper function to get initials from display name
+const getInitials = (name: string): string => {
+  if (!name) return "?";
+  const names = name.split(' ');
+  if (names.length === 1) {
+    return names[0].charAt(0).toUpperCase();
+  }
+  return (names[0].charAt(0) + names[names.length - 1].charAt(0)).toUpperCase();
+};
 
 const PeopleList = () => {
   const [people, setPeople] = useState<Person[]>([]);
@@ -42,33 +55,36 @@ const PeopleList = () => {
   }
 
   return (
-    <div className="border-r border-gray-200 h-full overflow-y-auto">
-      <h2 className="text-lg font-semibold p-4 border-b">Relevant People</h2>
-      <ul>
-        {people.length === 0 ? (
-          <li className="p-4 text-gray-500">No people found</li>
-        ) : (
-          people.map((person) => (
-            <li key={person.id} className="border-b last:border-0">
-              <div className="p-4">
-                <div className="font-medium">{safeStringContent(person.displayName)}</div>
-                {person.scoredEmailAddresses && person.scoredEmailAddresses.length > 0 && (
-                  <div className="text-sm text-gray-500">
-                    {safeStringContent(person.scoredEmailAddresses[0].address)}
+    // Remove border-r, handled by Tabs container
+    <div className="h-full">
+      {people.length === 0 ? (
+        <p className="p-4 text-gray-500">No people found</p>
+      ) : (
+        // Add padding and spacing for cards
+        <div className="p-2 space-y-2">
+          {people.map((person) => {
+            const displayName = safeStringContent(person.displayName);
+            const email = person.scoredEmailAddresses?.[0]?.address
+              ? safeStringContent(person.scoredEmailAddresses[0].address)
+              : "No email available";
+
+            return (
+              <Card key={person.id} className="transition-colors">
+                <CardHeader className="flex flex-row items-center space-x-3 p-3">
+                  <Avatar>
+                    {/* Add AvatarFallback with initials */}
+                    <AvatarFallback>{getInitials(displayName)}</AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1">
+                    <CardTitle className="text-sm font-medium">{displayName}</CardTitle>
+                    <CardDescription className="text-xs">{email}</CardDescription>
                   </div>
-                )}
-                {person.personType && (
-                  <div className="text-xs text-gray-400 mt-1">
-                    {safeStringContent(person.personType.class)}
-                    {person.personType.subclass ?
-                      ` (${safeStringContent(person.personType.subclass)})` : ''}
-                  </div>
-                )}
-              </div>
-            </li>
-          ))
-        )}
-      </ul>
+                </CardHeader>
+              </Card>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 };

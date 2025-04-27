@@ -56,5 +56,6 @@ export const useGraph = () => {
     getGraphClient,
     isLoading,
     error,
+    accounts,
   };
 }; 
