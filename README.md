@@ -1,98 +1,54 @@
-# MS Teams Chat Manager
+# React + TypeScript + Vite
 
-A minimalistic single-page application that allows users to sign in with their Microsoft accounts and manage their Microsoft Teams chats using the Microsoft Graph API.
+This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
-## Features
+Currently, two official plugins are available:
 
-- Sign in with Microsoft account
-- View list of MS Teams chats
-- Read chat messages
-- Send new messages
-- View your profile information
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
 
-## Prerequisites
+## Expanding the ESLint configuration
 
-- Node.js (v14 or higher)
-- npm (v6 or higher)
-- Microsoft 365 account with Teams access
-- Azure AD app registration with appropriate permissions
+If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
 
-## Setup
-
-1. Clone the repository
-
-   ```
-   git clone <repository-url>
-   cd ms-teams-app
-   ```
-
-2. Install dependencies
-
-   ```
-   npm install --legacy-peer-deps
-   ```
-
-3. Configure environment variables
-
-   Copy the example environment file and update with your settings:
-
-   ```
-   cp .env.example .env
-   ```
-
-   Edit the `.env` file and update:
-
-   ```
-   VITE_MSAL_CLIENT_ID=your_azure_ad_client_id
-   VITE_MSAL_AUTHORITY=https://login.microsoftonline.com/common
-   VITE_MSAL_REDIRECT_URI=http://localhost:5173
-   ```
-
-   > Note: Make sure your Azure AD app is registered with the following Microsoft Graph API permissions:
-   > - User.Read
-   > - Chat.ReadWrite
-   > - ChatMessage.Read
-   > - ChatMessage.Send
-   > - TeamMember.Read.All
-
-4. Start the development server
-
-   ```
-   npm run dev
-   ```
-
-5. Open your browser and navigate to `http://localhost:5173`
-
-## Environment Configuration
-
-The application supports different environment settings for development, test, and production:
-
-- `.env`: Default environment variables (always loaded)
-- `.env.local`: Local overrides (loaded for all environments except test)
-- `.env.development`: Development-specific settings (used with `npm run dev`)
-- `.env.test`: Test-specific settings (used with `npm run test`)
-- `.env.production`: Production-specific settings (used with `npm run build`)
-
-See the [Vite documentation](https://vitejs.dev/guide/env-and-mode.html) for more information on environment variable handling.
-
-## Building for Production
-
-To build the app for production, run:
-
-```
-npm run build
+```js
+export default tseslint.config({
+  extends: [
+    // Remove ...tseslint.configs.recommended and replace with this
+    ...tseslint.configs.recommendedTypeChecked,
+    // Alternatively, use this for stricter rules
+    ...tseslint.configs.strictTypeChecked,
+    // Optionally, add this for stylistic rules
+    ...tseslint.configs.stylisticTypeChecked,
+  ],
+  languageOptions: {
+    // other options...
+    parserOptions: {
+      project: ['./tsconfig.node.json', './tsconfig.app.json'],
+      tsconfigRootDir: import.meta.dirname,
+    },
+  },
+})
 ```
 
-The build artifacts will be stored in the `dist/` directory.
+You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
 
-For production deployment, ensure you set the environment variables appropriately in your hosting environment.
+```js
+// eslint.config.js
+import reactX from 'eslint-plugin-react-x'
+import reactDom from 'eslint-plugin-react-dom'
 
-## Technologies Used
-
-- React
-- TypeScript
-- Microsoft Authentication Library (MSAL)
-- Microsoft Graph API
-- React Router
-- Tailwind CSS
-- Vite
+export default tseslint.config({
+  plugins: {
+    // Add the react-x and react-dom plugins
+    'react-x': reactX,
+    'react-dom': reactDom,
+  },
+  rules: {
+    // other rules...
+    // Enable its recommended typescript rules
+    ...reactX.configs['recommended-typescript'].rules,
+    ...reactDom.configs.recommended.rules,
+  },
+})
+```
