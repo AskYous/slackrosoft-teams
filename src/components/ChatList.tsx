@@ -12,9 +12,9 @@ interface ChatListProps {
 export const ChatList: FC<ChatListProps> = ({ chats, title, onSelectChat, selectedChatId }) => {
   return (
     // Adjusted styling: fixed width, full height, bg, text colors
-    <div className="w-80 h-screen overflow-y-scroll border-r bg-primary text-accent flex flex-col">
+    <div className="w-80 h-screen overflow-y-scroll border-r bg-[#4A154B] text-white flex flex-col">
       {/* Header */}
-      <div className="p-4 border-b">
+      <div className="p-4 border-b border-white/20">
         <div className="text-xl font-bold">{title}</div>
       </div>
 
@@ -27,8 +27,8 @@ export const ChatList: FC<ChatListProps> = ({ chats, title, onSelectChat, select
             onClick={() => chat.id && onSelectChat(chat.id)}
             // Added styling for hover, padding, and conditional selection highlight
             className={cn(
-              "cursor-pointer p-2 rounded hover:bg-accent/10",
-              selectedChatId === chat.id && "bg-accent/20 font-semibold" // Highlight if selected
+              "cursor-pointer p-2 rounded hover:bg-white/10",
+              selectedChatId === chat.id && "bg-white/20 font-semibold"
             )}
           >
             {/* Consider adding more details or click handler later */}
