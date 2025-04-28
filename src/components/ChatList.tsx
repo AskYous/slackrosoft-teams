@@ -11,6 +11,7 @@ interface ChatListProps {
   selectedChatId: string | null;
 }
 
+// Utility functions
 const getInitials = (name?: string) => {
   if (!name) return "?";
   const parts = name.split(" ").filter(Boolean);
@@ -21,12 +22,10 @@ const getInitials = (name?: string) => {
 const getChatDisplayName = (chat: Chat, currentUserId: string) => {
   if (chat.topic) return chat.topic;
   if (chat.chatType === "oneOnOne" && Array.isArray(chat.members)) {
-    // Exclude current user from display
     const otherMember = (chat.members as ConversationMember[]).find(m => m.id !== currentUserId);
     return otherMember ? otherMember.displayName : "Chat";
   }
   if (chat.chatType === "group" && Array.isArray(chat.members)) {
-    // Show up to 3 names, excluding current user
     const names = (chat.members as ConversationMember[])
       .filter(m => m.id !== currentUserId)
       .map(m => m.displayName)
@@ -36,7 +35,48 @@ const getChatDisplayName = (chat: Chat, currentUserId: string) => {
   return "Chat";
 };
 
-const safeString = (val: unknown): string | undefined => typeof val === "string" ? val : undefined;
+const isAadUserConversationMember = (member: ConversationMember | undefined): member is ConversationMember & { userId: string } => {
+  return !!member && 'userId' in member && typeof (member as { userId?: unknown }).userId === 'string';
+};
+
+const getUserId = (member: ConversationMember | undefined): string | undefined => {
+  if (isAadUserConversationMember(member)) {
+    return member.userId;
+  }
+  return typeof member?.id === 'string' ? member.id : undefined;
+};
+
+// ChatAvatar component
+const ChatAvatar: FC<{ chat: Chat; currentUserId: string }> = ({ chat, currentUserId }) => {
+  let userId: string | undefined = undefined;
+  let otherMember: ConversationMember | undefined = undefined;
+  if (chat.chatType === "oneOnOne" && Array.isArray(chat.members)) {
+    otherMember = (chat.members as ConversationMember[]).find(m => m.id !== currentUserId);
+    userId = getUserId(otherMember);
+  }
+  const { photoUrl } = useProfilePhoto(userId);
+
+  if (chat.chatType === "oneOnOne" && otherMember) {
+    return (
+      <div className="flex-shrink-0 h-6 w-6 rounded-sm bg-gray-500 flex items-center justify-center overflow-hidden mr-3">
+        {photoUrl ? (
+          <img src={photoUrl} alt={otherMember?.displayName || "User"} className="h-full w-full object-cover" />
+        ) : (
+          <span className="text-white font-bold">{getInitials(otherMember?.displayName ?? undefined)}</span>
+        )}
+      </div>
+    );
+  }
+  if (chat.chatType === "group" && Array.isArray(chat.members)) {
+    const participantCount = (chat.members as ConversationMember[]).filter(m => m.id !== currentUserId).length;
+    return (
+      <div className="flex-shrink-0 h-6 w-6 rounded-sm bg-gray-500 flex items-center justify-center overflow-hidden mr-3">
+        <span className="text-white font-bold text-xs">{participantCount}</span>
+      </div>
+    );
+  }
+  return null;
+};
 
 const ChatListItem: FC<{
   chat: Chat;
@@ -44,45 +84,7 @@ const ChatListItem: FC<{
   selected: boolean;
   onSelect: (chatId: string) => void;
 }> = ({ chat, currentUserId, selected, onSelect }) => {
-  let avatar = null;
   const displayName = getChatDisplayName(chat, currentUserId);
-
-  // Find the other member and their ID for 1:1 chats
-  let otherMember: ConversationMember | undefined = undefined;
-  if (chat.chatType === "oneOnOne" && Array.isArray(chat.members)) {
-    otherMember = (chat.members as ConversationMember[]).find(m => m.id !== currentUserId);
-  }
-  // Type guard for AadUserConversationMember
-  const getUserId = (member: ConversationMember | undefined): string | undefined => {
-    if (member && 'userId' in member && typeof member.userId === 'string') {
-      return member.userId;
-    }
-    return safeString(member?.id);
-  };
-  const userId = getUserId(otherMember);
-  const { photoUrl } = useProfilePhoto(userId);
-
-  if (chat.chatType === "oneOnOne" && otherMember) {
-    avatar = (
-      <div className="flex-shrink-0 h-6 w-6 rounded-sm bg-gray-500 flex items-center justify-center overflow-hidden mr-3">
-        {photoUrl ? (
-          <img src={photoUrl} alt={otherMember.displayName || "User"} className="h-full w-full object-cover" />
-        ) : (
-          <span className="text-white font-bold">{getInitials(otherMember.displayName ?? undefined)}</span>
-        )}
-      </div>
-    );
-  }
-  // Add group chat avatar: show number of participants (excluding current user)
-  if (chat.chatType === "group" && Array.isArray(chat.members)) {
-    const participantCount = (chat.members as ConversationMember[]).filter(m => m.id !== currentUserId).length;
-    avatar = (
-      <div className="flex-shrink-0 h-6 w-6 rounded-sm bg-gray-500 flex items-center justify-center overflow-hidden mr-3">
-        <span className="text-white font-bold text-xs">{participantCount}</span>
-      </div>
-    );
-  }
-
   return (
     <div
       key={chat.id}
@@ -92,7 +94,7 @@ const ChatListItem: FC<{
         selected && "bg-white/20 font-semibold"
       )}
     >
-      {avatar}
+      <ChatAvatar chat={chat} currentUserId={currentUserId} />
       <div className="text-sm truncate">{displayName}</div>
     </div>
   );
@@ -101,15 +103,11 @@ const ChatListItem: FC<{
 export const ChatList: FC<ChatListProps> = ({ chats, title, onSelectChat, selectedChatId }) => {
   const { accounts } = useMsal();
   const currentUserId = accounts[0]?.localAccountId || accounts[0]?.homeAccountId || "";
-
   return (
     <div className="w-80 h-screen overflow-y-scroll border-r bg-[#4A154B] text-white flex flex-col">
-      {/* Header */}
       <div className="p-4 border-b border-white/20">
         <div className="text-xl font-bold">{title}</div>
       </div>
-
-      {/* Scrollable Chat List */}
       <div className="p-2 flex flex-col gap-1">
         {chats.map(chat => (
           <ChatListItem
