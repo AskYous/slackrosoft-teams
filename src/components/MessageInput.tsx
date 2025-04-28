@@ -1,4 +1,4 @@
-import { FC, useState } from "react";
+import { FC, useEffect, useRef, useState } from "react";
 import { Button } from "./ui/button";
 
 interface MessageInputProps {
@@ -8,11 +8,29 @@ interface MessageInputProps {
 
 export const MessageInput: FC<MessageInputProps> = ({ onSendMessage, disabled }) => {
   const [newMessage, setNewMessage] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [shouldFocus, setShouldFocus] = useState(false);
+
+  // Use an effect to focus the input when needed or when disabled state changes to false
+  useEffect(() => {
+    if (shouldFocus && !disabled) {
+      inputRef.current?.focus();
+      setShouldFocus(false);
+    }
+  }, [shouldFocus, disabled]);
+
+  // Auto-focus when component mounts
+  useEffect(() => {
+    if (!disabled) {
+      inputRef.current?.focus();
+    }
+  }, [disabled]);
 
   const handleSendMessage = () => {
     if (newMessage.trim()) {
       onSendMessage(newMessage);
       setNewMessage(""); // Clear input after sending
+      setShouldFocus(true); // Request focus after sending
     }
   };
 
@@ -30,13 +48,15 @@ export const MessageInput: FC<MessageInputProps> = ({ onSendMessage, disabled })
   return (
     <div data-testid="message-input" className="mt-auto flex gap-2 border-t pt-4">
       <input
+        ref={inputRef}
         type="text"
         placeholder="Type your message..."
         value={newMessage}
         onChange={handleInputChange}
         onKeyDown={handleKeyDown}
         className="flex-grow border rounded px-2 py-1"
-        disabled={disabled} // Pass disabled state
+        disabled={disabled}
+        autoFocus
       />
       <Button onClick={handleSendMessage} disabled={disabled || !newMessage.trim()}>
         {disabled ? "Sending..." : "Send"}
