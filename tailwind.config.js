@@ -16,6 +16,9 @@ module.exports = {
       },
     },
     extend: {
+      fontFamily: {
+        sans: ['Lato', 'sans-serif'],
+      },
       colors: {
         slackPurple: '#4A154B',
         border: "hsl(var(--border))",
