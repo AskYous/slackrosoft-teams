@@ -15,7 +15,7 @@ const App = () => {
       <AuthenticatedTemplate>
         {loading && <div>Loading chats...</div>}
         {error && <div>Error loading chats: {error.message}</div>}
-        {chats && <ChatList chats={chats} />}
+        {chats && <ChatList chats={chats} title="Innovation Team" />}
       </AuthenticatedTemplate>
       <div className="flex flex-row w-full p-2">
         <ChatWindow />
