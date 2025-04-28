@@ -24,9 +24,16 @@ const App = () => {
   const { chats, loading, error } = useChats();
 
   return (
-    <div>
+    <>
+      <div className="w-full flex justify-end">
+        <AuthenticatedTemplate>
+          <Button onClick={handleLogout}>Sign Out</Button>
+        </AuthenticatedTemplate>
+        <UnauthenticatedTemplate>
+          <Button onClick={handleLogin}>Sign In</Button>
+        </UnauthenticatedTemplate>
+      </div>
       <AuthenticatedTemplate>
-        <Button onClick={handleLogout}>Sign Out</Button>
         <div className="flex">
           {loading && <div>Loading chats...</div>}
           {error && <div>Error loading chats: {error.message}</div>}
@@ -34,10 +41,7 @@ const App = () => {
           <ChatWindow />
         </div>
       </AuthenticatedTemplate>
-      <UnauthenticatedTemplate>
-        <Button onClick={handleLogin}>Sign In</Button>
-      </UnauthenticatedTemplate>
-    </div>
+    </>
   )
 }
 
