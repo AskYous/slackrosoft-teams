@@ -1,4 +1,5 @@
 import { AuthenticatedTemplate, UnauthenticatedTemplate, useMsal } from "@azure/msal-react";
+import { useState } from "react";
 import './App.css';
 import { loginRequest } from "./authConfig";
 import { ChatList } from "./components/ChatList";
@@ -7,20 +8,44 @@ import { Button } from "./components/ui/button";
 import { useChats } from "./hooks/useChats";
 
 const App = () => {
-
   const { chats, loading, error } = useChats();
+  const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
+
+  const handleSelectChat = (chatId: string) => {
+    setSelectedChatId(chatId);
+  };
 
   return (
-    <div className="flex justify-stretch w-full">
+    <div className="flex h-screen w-full bg-background text-primary">
       <AuthenticatedTemplate>
-        {loading && <div>Loading chats...</div>}
-        {error && <div>Error loading chats: {error.message}</div>}
-        {chats && <ChatList chats={chats} title="Innovation Team" />}
+        <div className="flex-none">
+          {loading && <div>Loading chats...</div>}
+          {error && <div>Error loading chats: {error.message}</div>}
+          {chats && (
+            <ChatList
+              chats={chats}
+              title="Teams Chats"
+              onSelectChat={handleSelectChat}
+              selectedChatId={selectedChatId}
+            />
+          )}
+          {!loading && !error && !chats && <div>No chats found or unable to load.</div>}
+        </div>
+        <div className="flex flex-col flex-grow">
+          <div className="flex-grow">
+            <ChatWindow chatId={selectedChatId} />
+          </div>
+          <div className="p-2 border-t bg-secondary">
+            <AuthBtns />
+          </div>
+        </div>
       </AuthenticatedTemplate>
-      <div className="flex flex-row w-full p-2">
-        <ChatWindow />
-        <AuthBtns />
-      </div>
+      <UnauthenticatedTemplate>
+        <div className="w-full h-full flex flex-col justify-center items-center">
+          <p className="mb-4">Please sign in to view your chats.</p>
+          <AuthBtns />
+        </div>
+      </UnauthenticatedTemplate>
     </div>
   )
 }
@@ -39,15 +64,15 @@ const AuthBtns = () => {
       console.error(e);
     });
   }
-  return <div className="w-full flex justify-end">
+  return <div className="flex justify-end items-center">
     <AuthenticatedTemplate>
-      <Button onClick={handleLogout}>{accounts[0]?.name}</Button>
+      <span className="mr-2 text-sm text-muted-foreground">{accounts[0]?.name}</span>
+      <Button onClick={handleLogout} variant="outline" size="sm">Sign Out</Button>
     </AuthenticatedTemplate>
     <UnauthenticatedTemplate>
       <Button onClick={handleLogin}>Sign In</Button>
     </UnauthenticatedTemplate>
   </div>;
 }
-  ;
 
 export default App
