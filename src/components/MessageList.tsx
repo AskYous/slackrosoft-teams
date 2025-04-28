@@ -53,20 +53,17 @@ const MessageItem: FC<{ message: ChatMessage }> = ({ message }) => {
       </div>
       {/* Message Bubble */}
       <div className="flex max-w-[85%] flex-col gap-1 rounded-lg "> {/* Adjusted gap, max-width */}
-        {/* From */}
-        <div data-testid="message-from" className="font-semibold text-primary">
-          {message.from?.user?.displayName ?? 'Unknown User'}
+        {/* Name and Timestamp Row */}
+        <div className="flex items-baseline gap-2">
+          <span data-testid="message-from" className="font-semibold text-primary">{message.from?.user?.displayName ?? 'Unknown User'}</span>
+          <span data-testid="message-timestamp" className="text-xs text-gray-400 font-normal">{new Date(message.createdDateTime!).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
         </div>
         {/* Body */}
         <div
           data-testid="message-body"
-          className=" break-words" // Added break-words for long content
+          className="break-words" // Added break-words for long content
           dangerouslySetInnerHTML={{ __html: message.body?.content ?? '' }}
         />
-        {/* Timestamp */}
-        <div data-testid="message-timestamp" className="mt-1 text-right text-xs text-gray-400"> {/* Added margin-top */}
-          {new Date(message.createdDateTime!).toLocaleString()}
-        </div>
       </div>
     </div>
   );

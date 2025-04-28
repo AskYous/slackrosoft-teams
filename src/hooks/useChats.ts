@@ -32,6 +32,7 @@ export const useChats = () => {
     try {
       const response = await graphClient.api("/me/chats")
         .select("id,topic,chatType,createdDateTime,lastUpdatedDateTime")
+        .expand("members")
         .top(50) // Consider making top count configurable or dynamic if needed
         .get();
       setChats(response.value);
