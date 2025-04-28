@@ -18,7 +18,7 @@ const App = () => {
   return (
     <div className="flex h-screen w-full bg-background text-primary">
       <AuthenticatedTemplate>
-        <div className="flex-none">
+        <div data-testid="left" className="flex-none">
           {loading && <div>Loading chats...</div>}
           {error && <div>Error loading chats: {error.message}</div>}
           {chats && (
@@ -31,13 +31,9 @@ const App = () => {
           )}
           {!loading && !error && !chats && <div>No chats found or unable to load.</div>}
         </div>
-        <div className="flex flex-col flex-grow">
-          <div className="flex-grow">
-            <ChatWindow chatId={selectedChatId} />
-          </div>
-          <div className="p-2 border-t bg-secondary">
-            <AuthBtns />
-          </div>
+        <div data-testid="right" className="flex flex-col justify-stretch h-screen w-full overflow-hidden">
+          <AuthBtns />
+          <ChatWindow chatId={selectedChatId} />
         </div>
       </AuthenticatedTemplate>
       <UnauthenticatedTemplate>
