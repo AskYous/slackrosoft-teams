@@ -41,7 +41,7 @@ const MessageItem: FC<{ message: ChatMessage }> = ({ message }) => {
   return (
     <div key={message.id} className="flex items-start gap-3 mb-2"> {/* Outer container: Avatar + Message Bubble */}
       {/* Avatar: Show photo or fallback to initials */}
-      <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-gray-300 text-sm font-semibold text-white overflow-hidden"> {/* Added overflow-hidden */}
+      <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-gray-300 font-semibold text-white overflow-hidden"> {/* Added overflow-hidden */}
         {photoLoading ? (
           <span className="text-gray-500 text-xs">...</span> // Simple loading indicator
         ) : photoUrl ? (
@@ -52,15 +52,15 @@ const MessageItem: FC<{ message: ChatMessage }> = ({ message }) => {
         )}
       </div>
       {/* Message Bubble */}
-      <div className="flex max-w-[85%] flex-col gap-1 rounded-lg bg-muted px-3 py-2 text-sm"> {/* Adjusted gap, max-width */}
+      <div className="flex max-w-[85%] flex-col gap-1 rounded-lg "> {/* Adjusted gap, max-width */}
         {/* From */}
-        <div data-testid="message-from" className="text-xs font-semibold text-primary">
+        <div data-testid="message-from" className="font-semibold text-primary">
           {message.from?.user?.displayName ?? 'Unknown User'}
         </div>
         {/* Body */}
         <div
           data-testid="message-body"
-          className="text-sm break-words" // Added break-words for long content
+          className=" break-words" // Added break-words for long content
           dangerouslySetInnerHTML={{ __html: message.body?.content ?? '' }}
         />
         {/* Timestamp */}
