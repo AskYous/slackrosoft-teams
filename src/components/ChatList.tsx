@@ -19,22 +19,6 @@ const getInitials = (name?: string) => {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 };
 
-const getChatDisplayName = (chat: Chat, currentUserId: string) => {
-  if (chat.topic) return chat.topic;
-  if (chat.chatType === "oneOnOne" && Array.isArray(chat.members)) {
-    const otherMember = (chat.members as ConversationMember[]).find(m => m.id !== currentUserId);
-    return otherMember ? otherMember.displayName : "Chat";
-  }
-  if (chat.chatType === "group" && Array.isArray(chat.members)) {
-    const names = (chat.members as ConversationMember[])
-      .filter(m => m.id !== currentUserId)
-      .map(m => m.displayName)
-      .filter(Boolean);
-    return names.length ? `${names.slice(0, 3).join(", ")}${names.length > 3 ? ", ..." : ""}` : "Group Chat";
-  }
-  return "Chat";
-};
-
 const isAadUserConversationMember = (member: ConversationMember | undefined): member is ConversationMember & { userId: string } => {
   return !!member && 'userId' in member && typeof (member as { userId?: unknown }).userId === 'string';
 };
@@ -47,11 +31,13 @@ const getUserId = (member: ConversationMember | undefined): string | undefined =
 };
 
 // ChatAvatar component
-const ChatAvatar: FC<{ chat: Chat; currentUserId: string }> = ({ chat, currentUserId }) => {
+const ChatAvatar: FC<{ chat: Chat; currentUserAadId: string }> = ({ chat, currentUserAadId }) => {
   let userId: string | undefined = undefined;
   let otherMember: ConversationMember | undefined = undefined;
   if (chat.chatType === "oneOnOne" && Array.isArray(chat.members)) {
-    otherMember = (chat.members as ConversationMember[]).find(m => m.id !== currentUserId);
+    otherMember = (chat.members as ConversationMember[]).find(
+      m => isAadUserConversationMember(m) && m.userId !== currentUserAadId
+    );
     userId = getUserId(otherMember);
   }
   const { photoUrl } = useProfilePhoto(userId);
@@ -68,7 +54,9 @@ const ChatAvatar: FC<{ chat: Chat; currentUserId: string }> = ({ chat, currentUs
     );
   }
   if (chat.chatType === "group" && Array.isArray(chat.members)) {
-    const participantCount = (chat.members as ConversationMember[]).filter(m => m.id !== currentUserId).length;
+    const participantCount = (chat.members as ConversationMember[]).filter(
+      m => isAadUserConversationMember(m) && m.userId !== currentUserAadId
+    ).length;
     return (
       <div className="flex-shrink-0 h-6 w-6 rounded-sm bg-gray-500 flex items-center justify-center overflow-hidden mr-3">
         <span className="text-white font-bold text-xs">{participantCount}</span>
@@ -80,11 +68,28 @@ const ChatAvatar: FC<{ chat: Chat; currentUserId: string }> = ({ chat, currentUs
 
 const ChatListItem: FC<{
   chat: Chat;
-  currentUserId: string;
+  currentUserAadId: string;
   selected: boolean;
   onSelect: (chatId: string) => void;
-}> = ({ chat, currentUserId, selected, onSelect }) => {
-  const displayName = getChatDisplayName(chat, currentUserId);
+}> = ({ chat, currentUserAadId, selected, onSelect }) => {
+  const getChatDisplayName = (chat: Chat) => {
+    if (chat.topic) return chat.topic;
+    if (chat.chatType === "oneOnOne" && Array.isArray(chat.members)) {
+      const otherMember = (chat.members as ConversationMember[]).find(
+        m => isAadUserConversationMember(m) && m.userId !== currentUserAadId
+      );
+      return otherMember ? otherMember.displayName : "Chat";
+    }
+    if (chat.chatType === "group" && Array.isArray(chat.members)) {
+      const names = (chat.members as ConversationMember[])
+        .filter(m => isAadUserConversationMember(m) && m.userId !== currentUserAadId)
+        .map(m => m.displayName)
+        .filter(Boolean);
+      return names.length ? `${names.slice(0, 3).join(", ")}${names.length > 3 ? ", ..." : ""}` : "Group Chat";
+    }
+    return "Chat";
+  };
+  const displayName = getChatDisplayName(chat);
   return (
     <div
       key={chat.id}
@@ -94,7 +99,7 @@ const ChatListItem: FC<{
         selected && "bg-white/20 font-semibold"
       )}
     >
-      <ChatAvatar chat={chat} currentUserId={currentUserId} />
+      <ChatAvatar chat={chat} currentUserAadId={currentUserAadId} />
       <div className="text-sm truncate">{displayName}</div>
     </div>
   );
@@ -102,7 +107,7 @@ const ChatListItem: FC<{
 
 export const ChatList: FC<ChatListProps> = ({ chats, title, onSelectChat, selectedChatId }) => {
   const { accounts } = useMsal();
-  const currentUserId = accounts[0]?.localAccountId || accounts[0]?.homeAccountId || "";
+  const currentUserAadId = accounts[0]?.idTokenClaims?.oid || accounts[0]?.idTokenClaims?.sub || "";
   return (
     <div className="w-80 h-screen overflow-y-scroll border-r bg-[#4A154B] text-white flex flex-col">
       <div className="p-4 border-b border-white/20">
@@ -113,7 +118,7 @@ export const ChatList: FC<ChatListProps> = ({ chats, title, onSelectChat, select
           <ChatListItem
             key={chat.id}
             chat={chat}
-            currentUserId={currentUserId}
+            currentUserAadId={currentUserAadId}
             selected={selectedChatId === chat.id}
             onSelect={onSelectChat}
           />
