@@ -9,6 +9,7 @@ export const useChatMessages = (chatId: string | null) => {
   const { instance, accounts, inProgress } = useMsal();
   const [messages, setMessages] = useState<ChatMessage[] | null>(null);
   const [loading, setLoading] = useState(false); // Start false until chatId is valid
+  const [sending, setSending] = useState(false); // Add separate state for sending
   const [error, setError] = useState<Error | null>(null);
 
   const account = accounts[0];
@@ -168,14 +169,14 @@ export const useChatMessages = (chatId: string | null) => {
       return;
     }
 
-    // Show loading state while sending
-    setLoading(true); // Or perhaps a different state like 'sending'
+    // Show sending state instead of loading
+    setSending(true); // Use sending state instead of loading
     setError(null); // Clear previous errors
 
     const accessToken = await getAccessToken();
     if (!accessToken) {
       setError(new Error("Cannot send message: Authentication token unavailable."));
-      setLoading(false); // Reset loading state
+      setSending(false); // Reset sending state
       return;
     }
 
@@ -211,9 +212,9 @@ export const useChatMessages = (chatId: string | null) => {
       setError(err instanceof Error ? err : new Error("Failed to send message: " + String(err)));
       // Optionally: Remove optimistic update if it failed
     } finally {
-      setLoading(false); // Set loading false after send attempt completes
+      setSending(false); // Set sending false after send attempt completes
     }
   }, [chatId, getAccessToken, fetchGraphMessages]); // Dependencies
 
-  return { messages, loading, error, sendMessage };
+  return { messages, loading, sending, error, sendMessage };
 }; 

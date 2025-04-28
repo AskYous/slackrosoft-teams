@@ -39,7 +39,7 @@ export const MessageInput: FC<MessageInputProps> = ({ onSendMessage, disabled })
         disabled={disabled} // Pass disabled state
       />
       <Button onClick={handleSendMessage} disabled={disabled || !newMessage.trim()}>
-        Send
+        {disabled ? "Sending..." : "Send"}
       </Button>
     </div>
   );

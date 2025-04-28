@@ -9,7 +9,7 @@ interface ChatWindowProps {
 }
 
 export const ChatWindow: FC<ChatWindowProps> = ({ chatId }) => {
-  const { messages, loading, error, sendMessage } = useChatMessages(chatId);
+  const { messages, loading, sending, error, sendMessage } = useChatMessages(chatId);
 
   // The handleSendMessage logic is now within MessageInput, but we pass the sendMessage function
   const handleSendMessage = (messageContent: string) => {
@@ -38,7 +38,7 @@ export const ChatWindow: FC<ChatWindowProps> = ({ chatId }) => {
       {chatId && (
         <MessageInput
           onSendMessage={handleSendMessage}
-          disabled={loading} // Disable input while loading messages
+          disabled={sending} // Use sending state for input disabling
         />
       )}
     </div>
