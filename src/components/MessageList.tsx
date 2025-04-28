@@ -41,7 +41,7 @@ const MessageItem: FC<{ message: ChatMessage }> = ({ message }) => {
   return (
     <div key={message.id} className="flex items-start gap-3 mb-2"> {/* Outer container: Avatar + Message Bubble */}
       {/* Avatar: Show photo or fallback to initials */}
-      <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-gray-300 font-semibold text-white overflow-hidden"> {/* Added overflow-hidden */}
+      <div className="mt-1 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-sm bg-gray-300 font-semibold text-white overflow-hidden"> {/* Added overflow-hidden */}
         {photoLoading ? (
           <span className="text-gray-500 text-xs">...</span> // Simple loading indicator
         ) : photoUrl ? (
