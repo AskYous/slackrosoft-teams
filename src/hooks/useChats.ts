@@ -18,6 +18,32 @@ export const useChats = () => {
     account: account,
   });
 
+  // Helper function to fetch chats using Graph API
+  const fetchGraphChats = async (accessToken: string) => {
+    setLoading(true);
+    setError(null); // Clear previous errors
+
+    const graphClient = Client.init({
+      authProvider: async (done) => {
+        done(null, accessToken);
+      },
+    });
+
+    try {
+      const response = await graphClient.api("/me/chats")
+        .select("id,topic,chatType,createdDateTime,lastUpdatedDateTime")
+        .top(50) // Consider making top count configurable or dynamic if needed
+        .get();
+      setChats(response.value);
+    } catch (err) {
+      console.error("useChats fetchGraphChats: API Error:", err); // Keep specific error context
+      setError(err instanceof Error ? err : new Error(String(err)));
+      setChats(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     // 1. Waiting for MSAL
     if (inProgress !== InteractionStatus.None) {
@@ -38,10 +64,18 @@ export const useChats = () => {
       console.error("useChats Effect: MSAL Silent Auth Error encountered:", msalError);
       setChats(null);
       if (msalError.name === "InteractionRequiredAuthError" || msalError.name === "BrowserAuthError") {
-        setLoading(true);
+        setLoading(true); // Keep loading during popup attempt
         instance.acquireTokenPopup({ ...loginRequest, account: account })
-          .then(() => {
-            // Success! Hook will re-run.
+          .then((popupResponse) => {
+            // Successfully acquired token via popup. Fetch chats.
+            // The hook *might* re-run, but calling fetch directly ensures it happens.
+            if (popupResponse?.accessToken) {
+              fetchGraphChats(popupResponse.accessToken);
+            } else {
+              console.error("useChats Effect: Popup succeeded but no access token received.");
+              setError(new Error("Popup completed but failed to retrieve token."));
+              setLoading(false);
+            }
           })
           .catch(err => {
             console.error("useChats Effect: Interactive token acquisition failed:", err);
@@ -49,6 +83,7 @@ export const useChats = () => {
             setLoading(false);
           });
       } else {
+        // Unrecoverable MSAL error
         setError(msalError);
         setLoading(false);
       }
@@ -56,91 +91,41 @@ export const useChats = () => {
     }
 
     // 4. Result exists from useMsalAuthentication (ideal case)
-    if (result) {
-      const graphClient = Client.init({
-        authProvider: async (done) => {
-          done(null, result.accessToken);
-        },
-      });
-
-      const fetchChats = async () => {
-        setLoading(true);
-        setError(null);
-        try {
-          const response = await graphClient.api("/me/chats")
-            .select("id,topic,chatType,createdDateTime,lastUpdatedDateTime")
-            .top(50)
-            .get();
-          setChats(response.value);
-        } catch (err) {
-          console.error("useChats Effect: API Error during fetch:", err);
-          setError(err instanceof Error ? err : new Error(String(err)));
-          setChats(null);
-        } finally {
-          setLoading(false);
-        }
-      };
-      fetchChats();
+    if (result?.accessToken) {
+      fetchGraphChats(result.accessToken);
     }
     // 5. MSAL ready, account exists, no error, but no result yet... Try manual silent acquisition
-    else {
-      setLoading(true);
+    else if (!result && !msalError) { // Added check !msalError for clarity
+      setLoading(true); // Keep loading while attempting silent acquisition
 
       instance.acquireTokenSilent({
         scopes: loginRequest.scopes,
         account: account,
       }).then(tokenResponse => {
-        const graphClient = Client.init({
-          authProvider: async (done) => {
-            done(null, tokenResponse.accessToken);
-          },
-        });
-        const fetchChats = async () => {
-          setError(null);
-          try {
-            const response = await graphClient.api("/me/chats")
-              .select("id,topic,chatType,createdDateTime,lastUpdatedDateTime")
-              .top(50)
-              .get();
-            setChats(response.value);
-          } catch (err) {
-            console.error("useChats Effect: API Error during fetch (manual):", err);
-            setError(err instanceof Error ? err : new Error(String(err)));
-            setChats(null);
-          } finally {
-            setLoading(false);
-          }
-        };
-        fetchChats();
+        // Successfully acquired token silently
+        if (tokenResponse?.accessToken) {
+          fetchGraphChats(tokenResponse.accessToken);
+        } else {
+          console.error("useChats Effect: Manual silent auth succeeded but no access token received.");
+          setError(new Error("Silent auth completed but failed to retrieve token."));
+          setLoading(false);
+        }
 
       }).catch(error => {
         console.error("useChats Effect: Manual acquireTokenSilent failed:", error);
+        // Handle potential interaction requirement from silent failure
         if (error.name === "InteractionRequiredAuthError" || error.name === "BrowserAuthError") {
+          // setLoading(true); // Already loading
           instance.acquireTokenPopup({ ...loginRequest, account: account })
             .then((popupResponse) => {
-              const graphClient = Client.init({
-                authProvider: async (done) => {
-                  done(null, popupResponse.accessToken);
-                },
-              });
-              const fetchChats = async () => {
-                setLoading(true);
-                setError(null);
-                try {
-                  const response = await graphClient.api("/me/chats")
-                    .select("id,topic,chatType,createdDateTime,lastUpdatedDateTime")
-                    .top(50)
-                    .get();
-                  setChats(response.value);
-                } catch (err) {
-                  console.error("useChats Effect: API Error during fetch (popup):", err);
-                  setError(err instanceof Error ? err : new Error(String(err)));
-                  setChats(null);
-                } finally {
-                  setLoading(false);
-                }
-              };
-              fetchChats();
+              // Successfully acquired token via popup after silent failure
+              if (popupResponse?.accessToken) {
+                fetchGraphChats(popupResponse.accessToken);
+              } else {
+                console.error("useChats Effect: Popup (after silent fail) succeeded but no access token received.");
+                setError(new Error("Popup completed but failed to retrieve token."));
+                setLoading(false);
+              }
             })
             .catch(err => {
               console.error("useChats Effect: Interactive token acquisition failed (after manual silent fail):", err);
@@ -148,13 +133,19 @@ export const useChats = () => {
               setLoading(false);
             });
         } else {
+          // Other silent error
           setError(error);
           setLoading(false);
         }
       });
+    } else {
+      // This case should ideally not be reached if the above logic is sound,
+      // but keep loading true just in case. Could indicate an unexpected state.
+      console.warn("useChats Effect: Reached unexpected state, keeping loading true.", { result, msalError, account, inProgress });
+      setLoading(true);
     }
 
-  }, [result, msalError, instance, account, inProgress]);
+  }, [result, msalError, instance, account, inProgress]); // Keep dependencies exhaustive
 
   return { chats, loading, error };
 }; 
