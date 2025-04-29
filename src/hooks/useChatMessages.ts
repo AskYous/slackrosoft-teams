@@ -83,9 +83,9 @@ export const useChatMessages = (chatId: string | null) => {
     });
 
     try {
-      // Fetch latest messages, ordered newest first by API
+      // Fetch latest messages
       const response = await graphClient.api(`/me/chats/${currentChatId}/messages`)
-        .top(50) // Fetch latest 50 messages, consider pagination for larger chats
+        .top(50) // Fetch latest 50 messages
         .orderby("createdDateTime DESC")
         .get();
 
@@ -132,7 +132,6 @@ export const useChatMessages = (chatId: string | null) => {
       // No return here, let getAccessToken attempt recovery
     }
 
-
     // Attempt to fetch
     setLoading(true); // Indicate loading before attempting to get token/fetch
     getAccessToken().then(accessToken => {
@@ -157,8 +156,39 @@ export const useChatMessages = (chatId: string | null) => {
       setLoading(false);
     });
 
+    // Setup event listener for message updates
+    // In a real implementation, this would be handled by a Microsoft Graph subscription webhook
+    // Here we're just implementing a client-side solution that doesn't require a webhook backend
+    window.addEventListener('message', handleMessageEvent);
+
+    return () => {
+      window.removeEventListener('message', handleMessageEvent);
+    };
+
     // Re-run when chatId, auth state, or callbacks change
   }, [chatId, instance, account, inProgress, getAccessToken, fetchGraphMessages]); // REMOVED result, msalError
+
+  // Handle incoming message events (simulating notification webhook)
+  const handleMessageEvent = useCallback((event: MessageEvent) => {
+    // In a real implementation, this would process webhooks from Microsoft Graph
+    // Instead, we're going to let our message sending function trigger this
+    if (event.data && event.data.type === 'CHAT_MESSAGE_RECEIVED' &&
+      event.data.chatId === chatId) {
+      // Add the new message to our state
+      if (event.data.message) {
+        setMessages(prevMessages =>
+          [...(prevMessages ?? []), event.data.message]
+        );
+      } else if (event.data.refresh && chatId) {
+        // Refresh messages if requested
+        getAccessToken().then(accessToken => {
+          if (accessToken) {
+            fetchGraphMessages(accessToken, chatId);
+          }
+        });
+      }
+    }
+  }, [chatId, getAccessToken, fetchGraphMessages]);
 
 
   // Function to send a message
@@ -194,18 +224,19 @@ export const useChatMessages = (chatId: string | null) => {
     };
 
     try {
-      // Consider adding optimistic UI update here (add message locally first)
-
+      // Send the message using Graph API
       const sentMessage = await graphClient.api(`/me/chats/${chatId}/messages`).post(chatMessage);
 
-      // Option 1: Re-fetch all messages (simpler, ensures consistency)
-      // await fetchGraphMessages(accessToken, chatId);
-
-      // Option 2: Add the sent message directly to the state (more responsive)
-      // Note: The sentMessage object from Graph might not have all details (like full 'from').
-      // Refetching might still be better for consistency unless you handle the optimistic update carefully.
+      // Optimistically add the message to the UI
       setMessages(prevMessages => [...(prevMessages ?? []), sentMessage]);
-      // scrollToBottom(); // Scroll after adding new message - handled in component
+
+      // Dispatch a client-side event to simulate a webhook notification
+      // In a real implementation, this would be handled by Microsoft Graph subscriptions
+      window.postMessage({
+        type: 'CHAT_MESSAGE_RECEIVED',
+        chatId: chatId,
+        message: sentMessage
+      }, '*');
 
     } catch (err: unknown) { // Use unknown
       console.error("sendMessage: API Error:", err);
@@ -214,7 +245,7 @@ export const useChatMessages = (chatId: string | null) => {
     } finally {
       setSending(false); // Set sending false after send attempt completes
     }
-  }, [chatId, getAccessToken, fetchGraphMessages]); // Dependencies
+  }, [chatId, getAccessToken]); // Dependencies
 
   return { messages, loading, sending, error, sendMessage };
 }; 
