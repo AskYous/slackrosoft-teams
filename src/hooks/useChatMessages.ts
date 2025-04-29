@@ -1,9 +1,11 @@
 import { AuthenticationResult, AuthError, InteractionStatus, InteractionType, PublicClientApplication } from "@azure/msal-browser";
 import { useMsal, useMsalAuthentication } from "@azure/msal-react";
-import { Client } from "@microsoft/microsoft-graph-client";
+// Remove Client import if no longer needed directly
+// import { Client } from "@microsoft/microsoft-graph-client";
 import { ChatMessage } from "@microsoft/microsoft-graph-types";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { loginRequest } from "../authConfig"; // Assuming authConfig is in src
+import { fetchMessages as fetchGraphMessagesService, sendMessage as sendGraphMessageService } from "../services/graphService"; // Corrected relative path
 
 export const useChatMessages = (chatId: string | null) => {
   const { instance, accounts, inProgress } = useMsal();
@@ -71,33 +73,24 @@ export const useChatMessages = (chatId: string | null) => {
   }, [instance, account, inProgress, messageRequest.scopes, accessTokenFromResult]);
 
 
-  // Helper function to fetch messages using Graph API
+  // Helper function to fetch messages using Graph API Service
   const fetchGraphMessages = useCallback(async (accessToken: string, currentChatId: string) => {
     setLoading(true);
     setError(null);
 
-    const graphClient = Client.init({
-      authProvider: (done) => {
-        done(null, accessToken);
-      },
-    });
-
     try {
-      // Fetch latest messages
-      const response = await graphClient.api(`/me/chats/${currentChatId}/messages`)
-        .top(50) // Fetch latest 50 messages
-        .orderby("createdDateTime DESC")
-        .get();
-
-      // Reverse the array to display oldest first (top to bottom)
-      setMessages(response.value.reverse());
-    } catch (err: unknown) { // Use unknown
-      console.error("useChatMessages fetchGraphMessages: API Error:", err);
+      // Call the service function to fetch messages
+      const messagesResult = await fetchGraphMessagesService(accessToken, currentChatId);
+      setMessages(messagesResult);
+    } catch (err: unknown) { // Catch errors from the service
+      console.error("useChatMessages fetchGraphMessages: API Service Error:", err);
       setError(err instanceof Error ? err : new Error(String(err)));
       setMessages(null);
     } finally {
       setLoading(false);
     }
+    // Pass the service function as a dependency if its reference might change,
+    // but since it's imported, it should be stable.
   }, []); // Dependencies are stable or passed as arguments
 
 
@@ -166,7 +159,7 @@ export const useChatMessages = (chatId: string | null) => {
     };
 
     // Re-run when chatId, auth state, or callbacks change
-  }, [chatId, instance, account, inProgress, getAccessToken, fetchGraphMessages]); // REMOVED result, msalError
+  }, [chatId, instance, account, inProgress, getAccessToken, fetchGraphMessages]); // Dependency remains the same as fetchGraphMessages callback is stable
 
   // Handle incoming message events (simulating notification webhook)
   const handleMessageEvent = useCallback((event: MessageEvent) => {
@@ -183,11 +176,13 @@ export const useChatMessages = (chatId: string | null) => {
         // Refresh messages if requested
         getAccessToken().then(accessToken => {
           if (accessToken) {
+            // Use the internal fetchGraphMessages which now uses the service
             fetchGraphMessages(accessToken, chatId);
           }
         });
       }
     }
+    // Pass fetchGraphMessages as dependency as it now wraps the service call
   }, [chatId, getAccessToken, fetchGraphMessages]);
 
 
@@ -210,22 +205,11 @@ export const useChatMessages = (chatId: string | null) => {
       return;
     }
 
-    const graphClient = Client.init({
-      authProvider: (done) => {
-        done(null, accessToken);
-      },
-    });
-
-    const chatMessage = {
-      body: {
-        content: content,
-        contentType: "html", // Use "html" if input allows formatting, else "text"
-      },
-    };
+    // Removed GraphClient initialization here
 
     try {
-      // Send the message using Graph API
-      const sentMessage = await graphClient.api(`/me/chats/${chatId}/messages`).post(chatMessage);
+      // Call the service function to send the message
+      const sentMessage = await sendGraphMessageService(accessToken, chatId, content);
 
       // Optimistically add the message to the UI
       setMessages(prevMessages => [...(prevMessages ?? []), sentMessage]);
@@ -238,13 +222,14 @@ export const useChatMessages = (chatId: string | null) => {
         message: sentMessage
       }, '*');
 
-    } catch (err: unknown) { // Use unknown
-      console.error("sendMessage: API Error:", err);
+    } catch (err: unknown) { // Catch errors from the service
+      console.error("sendMessage: API Service Error:", err);
       setError(err instanceof Error ? err : new Error("Failed to send message: " + String(err)));
       // Optionally: Remove optimistic update if it failed
     } finally {
       setSending(false); // Set sending false after send attempt completes
     }
+    // Pass getAccessToken as dependency as it's used directly
   }, [chatId, getAccessToken]); // Dependencies
 
   return { messages, loading, sending, error, sendMessage };
