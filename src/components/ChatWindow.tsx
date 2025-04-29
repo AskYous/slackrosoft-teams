@@ -1,8 +1,9 @@
 import { useMsal } from "@azure/msal-react"; // Needed for currentUserAadId
-import { Chat } from "@microsoft/microsoft-graph-types"; // Add Chat type
+import { Chat, ConversationMember } from "@microsoft/microsoft-graph-types"; // Add Chat type
 import { FC } from "react";
 import { useChatMessages } from "../hooks/useChatMessages";
-import { ChatAvatar, getChatDisplayName } from "./ChatList"; // Import necessary items
+import { usePresence } from "../hooks/usePresence"; // Import usePresence
+import { ChatAvatar, getChatDisplayName, getUserId, isAadUserConversationMember } from "./ChatList"; // Import necessary items
 import { MessageInput } from "./MessageInput"; // Import new component
 import { MessageList } from "./MessageList"; // Import new component
 
@@ -18,6 +19,16 @@ export const ChatWindow: FC<ChatWindowProps> = ({ selectedChat }) => {
   const { accounts } = useMsal(); // Get accounts for current user ID
   const currentUserAadId = accounts[0]?.idTokenClaims?.oid || accounts[0]?.idTokenClaims?.sub || "";
 
+  // --- Presence Logic ---
+  let otherUserId: string | undefined = undefined;
+  if (selectedChat?.chatType === 'oneOnOne' && Array.isArray(selectedChat.members)) {
+    const otherMember = (selectedChat.members as ConversationMember[]).find(
+      m => isAadUserConversationMember(m) && m.userId !== currentUserAadId
+    );
+    otherUserId = getUserId(otherMember);
+  }
+  const { presence } = usePresence(otherUserId); // Fetch presence for the other user
+  // --- End Presence Logic ---
 
   // The handleSendMessage logic is now within MessageInput, but we pass the sendMessage function
   const handleSendMessage = (messageContent: string) => {
@@ -34,8 +45,12 @@ export const ChatWindow: FC<ChatWindowProps> = ({ selectedChat }) => {
     <div data-testid="chat-window" className="flex flex-col p-4 border-l flex-grow overflow-hidden">
       {/* Updated Header */}
       <div className="flex items-center mb-4 border-b pb-2 flex-shrink-0">
-        {selectedChat && <ChatAvatar chat={selectedChat} currentUserAadId={currentUserAadId} />}
-        <h3 className="text-lg font-bold ml-3">{displayName}</h3>
+        {selectedChat && (
+          <div className="relative mr-3"> {/* Wrapper for avatar + presence */}
+            <ChatAvatar chat={selectedChat} currentUserAadId={currentUserAadId} />
+          </div>
+        )}
+        <h3 className="text-lg font-bold">{displayName}</h3> {/* Removed ml-3 as wrapper provides margin */}
       </div>
 
 

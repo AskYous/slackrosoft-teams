@@ -40,7 +40,29 @@ export const msalConfig: Configuration = {
   },
 };
 
-// Add scopes here for ID token to be used at Microsoft identity platform endpoints.
+// Scopes required for the application overall, including login
 export const loginRequest = {
-  scopes: ["User.Read", "Chat.ReadWrite", "ChatMessage.Send", "User.ReadBasic.All"]
+  scopes: [
+    "openid", // Standard OpenID Connect scope
+    "profile", // Standard OpenID Connect scope
+    "User.Read", // Basic user profile
+    "Chat.ReadWrite", // Read/write user's chats
+    "ChatMessage.Send", // Send messages
+    "User.ReadBasic.All", // Read basic profile of all users (needed for names/photos)
+    "Presence.Read.All" // Read presence status of all users
+  ]
+};
+
+// Scopes specifically needed for Microsoft Graph API calls by the client
+// Often overlaps with loginRequest, but defined separately for clarity
+export const graphApiScopes = {
+  // Use the same scopes needed for your API calls
+  // The AuthCodeMSALBrowserAuthenticationProvider will request these
+  scopes: [
+    "User.Read",
+    "Chat.ReadWrite",
+    "ChatMessage.Send",
+    "User.ReadBasic.All",
+    "Presence.Read.All"
+  ]
 };

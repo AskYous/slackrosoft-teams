@@ -35,6 +35,7 @@ const App = () => {
           {!loading && !error && !chats && <div>No chats found or unable to load.</div>}
         </div>
         <div data-testid="right" className="flex flex-col justify-stretch h-screen w-full overflow-hidden">
+          <AuthBtns />
           <ChatWindow selectedChat={selectedChat} />
         </div>
       </AuthenticatedTemplate>

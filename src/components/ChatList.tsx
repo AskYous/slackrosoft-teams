@@ -2,7 +2,9 @@ import { cn } from "@/lib/utils"; // Assuming shadcn/ui utility for conditional 
 import { useMsal } from "@azure/msal-react";
 import { Chat, ConversationMember } from "@microsoft/microsoft-graph-types";
 import { FC } from "react";
+import { usePresence } from "../hooks/usePresence"; // Import usePresence hook
 import { useProfilePhoto } from "../hooks/useProfilePhoto";
+import { PresenceIndicator } from "./ui/PresenceIndicator"; // Import PresenceIndicator
 
 interface ChatListProps {
   chats: Chat[];
@@ -19,11 +21,11 @@ const getInitials = (name?: string) => {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 };
 
-const isAadUserConversationMember = (member: ConversationMember | undefined): member is ConversationMember & { userId: string } => {
+export const isAadUserConversationMember = (member: ConversationMember | undefined): member is ConversationMember & { userId: string } => {
   return !!member && 'userId' in member && typeof (member as { userId?: unknown }).userId === 'string';
 };
 
-const getUserId = (member: ConversationMember | undefined): string | undefined => {
+export const getUserId = (member: ConversationMember | undefined): string | undefined => {
   if (isAadUserConversationMember(member)) {
     return member.userId;
   }
@@ -41,14 +43,21 @@ export const ChatAvatar: FC<{ chat: Chat; currentUserAadId: string }> = ({ chat,
     userId = getUserId(otherMember);
   }
   const { photoUrl } = useProfilePhoto(userId);
+  const { presence } = usePresence(userId); // Fetch presence for the other user
 
   if (chat.chatType === "oneOnOne" && otherMember) {
     return (
-      <div className="flex-shrink-0 h-6 w-6 rounded-sm bg-gray-500 flex items-center justify-center overflow-hidden mr-3">
+      <div className="relative flex-shrink-0 h-6 w-6 rounded-sm bg-gray-500 flex items-center justify-center overflow-visible mr-3"> {/* Increased size slightly & allow overflow */}
         {photoUrl ? (
-          <img src={photoUrl} alt={otherMember?.displayName || "User"} className="h-full w-full object-cover" />
+          <img src={photoUrl} alt={otherMember?.displayName || "User"} className="h-full w-full object-cover rounded-sm" />
         ) : (
           <span className="text-white font-bold">{getInitials(otherMember?.displayName ?? undefined)}</span>
+        )}
+        {presence && (
+          <PresenceIndicator
+            availability={presence.availability ?? undefined}
+            className="absolute bottom-[-2px] right-[-2px]"
+          />
         )}
       </div>
     );
