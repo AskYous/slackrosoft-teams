@@ -31,7 +31,7 @@ const getUserId = (member: ConversationMember | undefined): string | undefined =
 };
 
 // ChatAvatar component
-const ChatAvatar: FC<{ chat: Chat; currentUserAadId: string }> = ({ chat, currentUserAadId }) => {
+export const ChatAvatar: FC<{ chat: Chat; currentUserAadId: string }> = ({ chat, currentUserAadId }) => {
   let userId: string | undefined = undefined;
   let otherMember: ConversationMember | undefined = undefined;
   if (chat.chatType === "oneOnOne" && Array.isArray(chat.members)) {
@@ -66,30 +66,31 @@ const ChatAvatar: FC<{ chat: Chat; currentUserAadId: string }> = ({ chat, curren
   return null;
 };
 
+export const getChatDisplayName = (chat: Chat, currentUserAadId: string) => {
+  if (chat.topic) return chat.topic;
+  if (chat.chatType === "oneOnOne" && Array.isArray(chat.members)) {
+    const otherMember = (chat.members as ConversationMember[]).find(
+      m => isAadUserConversationMember(m) && m.userId !== currentUserAadId
+    );
+    return otherMember ? otherMember.displayName : "Chat";
+  }
+  if (chat.chatType === "group" && Array.isArray(chat.members)) {
+    const names = (chat.members as ConversationMember[])
+      .filter(m => isAadUserConversationMember(m) && m.userId !== currentUserAadId)
+      .map(m => m.displayName)
+      .filter(Boolean);
+    return names.length ? `${names.slice(0, 3).join(", ")}${names.length > 3 ? ", ..." : ""}` : "Group Chat";
+  }
+  return "Chat";
+};
+
 const ChatListItem: FC<{
   chat: Chat;
   currentUserAadId: string;
   selected: boolean;
   onSelect: (chatId: string) => void;
 }> = ({ chat, currentUserAadId, selected, onSelect }) => {
-  const getChatDisplayName = (chat: Chat) => {
-    if (chat.topic) return chat.topic;
-    if (chat.chatType === "oneOnOne" && Array.isArray(chat.members)) {
-      const otherMember = (chat.members as ConversationMember[]).find(
-        m => isAadUserConversationMember(m) && m.userId !== currentUserAadId
-      );
-      return otherMember ? otherMember.displayName : "Chat";
-    }
-    if (chat.chatType === "group" && Array.isArray(chat.members)) {
-      const names = (chat.members as ConversationMember[])
-        .filter(m => isAadUserConversationMember(m) && m.userId !== currentUserAadId)
-        .map(m => m.displayName)
-        .filter(Boolean);
-      return names.length ? `${names.slice(0, 3).join(", ")}${names.length > 3 ? ", ..." : ""}` : "Group Chat";
-    }
-    return "Chat";
-  };
-  const displayName = getChatDisplayName(chat);
+  const displayName = getChatDisplayName(chat, currentUserAadId);
   return (
     <div
       key={chat.id}

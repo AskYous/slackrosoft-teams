@@ -1,4 +1,5 @@
 import { AuthenticatedTemplate, UnauthenticatedTemplate, useMsal } from "@azure/msal-react";
+import { Chat } from "@microsoft/microsoft-graph-types";
 import { useState } from "react";
 import './App.css';
 import { loginRequest } from "./authConfig";
@@ -14,6 +15,8 @@ const App = () => {
   const handleSelectChat = (chatId: string) => {
     setSelectedChatId(chatId);
   };
+
+  const selectedChat: Chat | null = chats?.find(chat => chat.id === selectedChatId) || null;
 
   return (
     <div className="flex h-screen w-full bg-background text-primary">
@@ -32,8 +35,7 @@ const App = () => {
           {!loading && !error && !chats && <div>No chats found or unable to load.</div>}
         </div>
         <div data-testid="right" className="flex flex-col justify-stretch h-screen w-full overflow-hidden">
-          <AuthBtns />
-          <ChatWindow chatId={selectedChatId} />
+          <ChatWindow selectedChat={selectedChat} />
         </div>
       </AuthenticatedTemplate>
       <UnauthenticatedTemplate>
