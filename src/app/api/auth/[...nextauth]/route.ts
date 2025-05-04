@@ -8,6 +8,8 @@ const { AZURE_CLIENT_ID, AZURE_CLIENT_SECRET, AZURE_TENANT_ID } = process.env;
 if (!AZURE_CLIENT_ID || !AZURE_CLIENT_SECRET)
   throw Error("Missing auth env vars");
 
+const scope = "openid profile email User.Read Chat.ReadWrite Presence.Read.All";
+
 const handler = NextAuth({
   providers: [
     AzureProvider({
@@ -17,8 +19,7 @@ const handler = NextAuth({
       // Fix: Define scopes within the authorization object
       authorization: {
         params: {
-          scope:
-            "openid profile email User.Read Chat.ReadWrite Presence.Read.All", // Combine desired scopes
+          scope,
         },
       },
     }),
@@ -39,8 +40,8 @@ const handler = NextAuth({
       // Send properties to the client, such as an access_token from a provider.
       // The type assertion acknowledges the intention to add accessToken,
       // assuming the Session type will be augmented appropriately elsewhere.
-      (session as Session & { accessToken?: string | unknown }).accessToken =
-        token.accessToken;
+      session.accessToken = String(token.accessToken);
+      console.log(session);
       return session;
     },
   },
