@@ -24,35 +24,24 @@ export default function Home() {
     </div>
   );
 }
+import { Client } from "@microsoft/microsoft-graph-client";
+import { Chat } from "@microsoft/microsoft-graph-types"; // Import Chat type from the types package
 
-// Define a basic type for a chat item (adjust as needed based on Graph API response)
-interface Chat {
-  id: string;
-  topic?: string;
-  lastUpdatedDateTime: string;
-  // Add other relevant fields
-}
-
-interface GraphChatResponse {
-  value: Chat[];
-  // Add other potential response fields like @odata.nextLink if handling pagination
-}
+// Keep the existing interface definitions for now, or adjust if needed
+// interface Chat { ... } // We can potentially remove this if the imported Chat type suffices
+// interface GraphChatResponse { ... } // This will likely become obsolete
 
 const useChats = () => {
   const { data: session } = useSession();
+  // Use the imported Chat type or keep your custom one if preferred
   const [chats, setChats] = useState<Chat[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
     const fetchChats = async () => {
-      // Ensure session and accessToken are available
       if (!session?.accessToken) {
-        // If there's no session or token yet, don't attempt to fetch
-        // Set loading to false if it wasn't the initial load,
-        // or keep it true if we are waiting for session
         if (session !== undefined) {
-          // Check if session has been checked (not just initial undefined)
           setLoading(false);
         }
         return;
@@ -62,30 +51,26 @@ const useChats = () => {
       setError(null);
 
       try {
-        const response = await fetch(
-          "https://graph.microsoft.com/v1.0/me/chats",
-          {
-            headers: {
-              Authorization: `Bearer ${session.accessToken}`,
-              "Content-Type": "application/json",
-            },
+        // Initialize the Microsoft Graph client
+        const client = Client.init({
+          authProvider: (done) => {
+            done(null, session.accessToken); // Pass the access token
           },
-        );
+        });
 
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(
-            errorData.error?.message ||
-              `Error fetching chats: ${response.statusText}`,
-          );
-        }
+        // Make the API call using the client
+        const response = await client.api("/me/chats").get();
 
-        const data: GraphChatResponse = await response.json();
-        setChats(data.value || []); // The chats are typically in the 'value' array
+        // The response structure from the client might be different
+        // Usually, the list of items is directly in response.value
+        setChats(response.value || []);
+
       } catch (err: unknown) {
         console.error("Failed to fetch chats from Microsoft Graph:", err);
+        // Error handling can be refined based on graph client error structure
         if (err instanceof Error) {
-          setError(err);
+           // Check for specific Graph client error types if needed
+          setError(new Error(err.message || "Failed to fetch chats using Graph client."));
         } else {
           setError(
             new Error("An unknown error occurred while fetching chats."),
@@ -98,8 +83,7 @@ const useChats = () => {
     };
 
     fetchChats();
-    // Re-fetch when the access token changes
-  }, [session?.accessToken, session]); // Added session itself to handle initial undefined state transition
+  }, [session?.accessToken, session]);
 
   return { chats, loading, error };
 };
