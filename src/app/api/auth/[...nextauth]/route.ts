@@ -1,22 +1,21 @@
+import type { Account, Session } from "next-auth";
 import NextAuth from "next-auth";
-import AzureProvider from "next-auth/providers/azure-ad";
 import type { JWT } from "next-auth/jwt";
-import type { Session } from "next-auth";
-import type { Account } from "next-auth";
+import AzureProvider from "next-auth/providers/azure-ad";
 
 const { AZURE_CLIENT_ID, AZURE_CLIENT_SECRET, AZURE_TENANT_ID } = process.env;
+
 if (!AZURE_CLIENT_ID || !AZURE_CLIENT_SECRET)
   throw Error("Missing auth env vars");
 
 const scope = "openid profile email User.Read Chat.ReadWrite Presence.Read.All";
 
-const handler = NextAuth({
+export const authOptions = {
   providers: [
     AzureProvider({
       clientId: AZURE_CLIENT_ID,
       clientSecret: AZURE_CLIENT_SECRET,
       tenantId: AZURE_TENANT_ID,
-      // Fix: Define scopes within the authorization object
       authorization: {
         params: {
           scope,
@@ -30,6 +29,8 @@ const handler = NextAuth({
     async jwt({ token, account }: { token: JWT; account: Account | null }) {
       // Persist the OAuth access_token to the token right after signin
       if (account) {
+        if (!account.access_token)
+          throw new Error("No access token found");
         token.accessToken = account.access_token;
       }
       return token;
@@ -41,10 +42,11 @@ const handler = NextAuth({
       // The type assertion acknowledges the intention to add accessToken,
       // assuming the Session type will be augmented appropriately elsewhere.
       session.accessToken = String(token.accessToken);
-      console.log(session);
       return session;
     },
   },
-});
+};
+
+const handler = NextAuth(authOptions);
 
 export { handler as GET, handler as POST };
